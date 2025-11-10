@@ -25,21 +25,26 @@ fn main() -> std::io::Result<()> {
     })?)
     .lines();
 
+    let mut max_acct_len = 0;
     while let Some(line) = lines.next() {
         let line = line?;
-        let line: Vec<&str> = line
-            .split(";")
-            .next() // use all of line prior to a comment
-            .unwrap()
-            .split("  ")
-            .filter(|x| !x.is_empty())
-            .collect();
+        let line = line_to_vec(line);
 
-        for item in line {
-            print!("{item} / ");
+        if line.len() == 2 {
+            // crude, but assume split
+            max_acct_len = max_acct_len.max(line[0].chars().count()); // len() != length
         }
-        println!();
     }
 
     Ok(())
+}
+
+fn line_to_vec(line: String) -> Vec<String> {
+    line.split(";")
+        .next()
+        .unwrap()
+        .split("  ")
+        .filter(|x| !x.is_empty())
+        .map(|x| x.to_string())
+        .collect()
 }
