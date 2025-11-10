@@ -62,9 +62,8 @@ fn main() -> std::io::Result<()> {
 }
 
 fn tokenize(line: &str) -> Vec<String> {
-    line.split(";")
-        .next()
-        .unwrap()
+    strip_comments(line)
+        .trim_start()
         .split("  ")
         .filter(|x| !x.is_empty())
         .map(|x| x.trim().to_string())
