@@ -19,15 +19,14 @@
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let mut lines = BufReader::new(std::fs::File::open(match std::env::var("LEDGER_FILE") {
+    let ledger = std::fs::read_to_string(match std::env::var("LEDGER_FILE") {
         Ok(val) => val,
         Err(_) => String::from("~/.hledger.journal"),
-    })?)
-    .lines();
+    })?;
 
     let mut max_acct_len = 0;
-    while let Some(line) = lines.next() {
-        let line = line?;
+    for line in ledger.lines() {
+        println!("{line}");
         let line = line_to_vec(line);
 
         if line.len() == 2 {
@@ -39,7 +38,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn line_to_vec(line: String) -> Vec<String> {
+fn line_to_vec(line: &str) -> Vec<String> {
     line.split(";")
         .next()
         .unwrap()
