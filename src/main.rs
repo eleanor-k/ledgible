@@ -26,24 +26,47 @@ fn main() -> std::io::Result<()> {
 
     let mut max_acct_len = 0;
     for line in ledger.lines() {
-        println!("{line}");
-        let line = line_to_vec(line);
+        let tokens = tokenize(line);
 
-        if line.len() == 2 {
+        if tokens.len() == 2 {
             // crude, but assume split
-            max_acct_len = max_acct_len.max(line[0].chars().count()); // len() != length
+            max_acct_len = max_acct_len.max(tokens[0].chars().count()); // len() != length
+        }
+    }
+
+    // write cycle
+    for line in ledger.lines() {
+        let tokens = tokenize(line);
+
+        if tokens.len() == 2 {
+            println!(
+                "    {:max_acct_len$}  {}{}",
+                tokens[0],
+                tokens[1],
+                comments(line)
+            );
+        } else {
+            // some other kind of line, so just print as-is
+            println!("{line}");
         }
     }
 
     Ok(())
 }
 
-fn line_to_vec(line: &str) -> Vec<String> {
+fn tokenize(line: &str) -> Vec<String> {
     line.split(";")
         .next()
         .unwrap()
         .split("  ")
         .filter(|x| !x.is_empty())
-        .map(|x| x.to_string())
+        .map(|x| x.trim().to_string())
         .collect()
+}
+
+fn comments(line: &str) -> String {
+    match line.split_once(";") {
+        None => String::from(""),
+        Some((_, x)) => format!(" ;{x}"),
+    }
 }
