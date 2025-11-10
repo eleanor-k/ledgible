@@ -25,30 +25,37 @@ fn main() -> std::io::Result<()> {
     })?;
 
     let mut max_acct_len = 0;
+    let mut max_line_len = 0;
     for line in ledger.lines() {
         let tokens = tokenize(line);
 
         if tokens.len() == 2 {
             // crude, but assume split
             max_acct_len = max_acct_len.max(tokens[0].chars().count()); // len() != length
+            // 4 from indent + 2 between account and amount
+            max_line_len = max_line_len.max(max_acct_len + tokens[1].chars().count() + 6);
+        } else {
+            max_line_len = max_line_len.max(strip_comments(line).chars().count());
         }
     }
 
     // write cycle
     for line in ledger.lines() {
+        if line.trim_start().starts_with(";") {
+            println!("{line}");
+            continue;
+        }
+
         let tokens = tokenize(line);
 
-        if tokens.len() == 2 {
-            println!(
-                "    {:max_acct_len$}  {}{}",
-                tokens[0],
-                tokens[1],
-                comments(line)
-            );
-        } else {
-            // some other kind of line, so just print as-is
-            println!("{line}");
-        }
+        println!(
+            "{:max_line_len$}{}",
+            match tokens.len() {
+                2 => format!("    {:max_acct_len$}  {}", tokens[0], tokens[1]),
+                _ => strip_comments(line).to_string(),
+            },
+            comments(line)
+        );
     }
 
     Ok(())
@@ -65,8 +72,19 @@ fn tokenize(line: &str) -> Vec<String> {
 }
 
 fn comments(line: &str) -> String {
+    if line.trim_start().starts_with(";") {
+        return line.to_string();
+    }
+
     match line.split_once(";") {
         None => String::from(""),
         Some((_, x)) => format!(" ;{x}"),
+    }
+}
+
+fn strip_comments(line: &str) -> String {
+    match line.split_once(";") {
+        None => line.to_string(),
+        Some((x, _)) => x.trim_end().to_string(),
     }
 }
