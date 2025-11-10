@@ -1,0 +1,7 @@
+[package]
+name = "ledgible"
+version = "0.0.0"
+edition = "2024"
+repository = "https://git.sr.ht/~eleanor/ledgible"
+license = "GPL-3.0-or-later"
+description = "Formatter for hledger journals"
