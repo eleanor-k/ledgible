@@ -27,11 +27,15 @@ fn main() -> std::io::Result<()> {
 
     while let Some(line) = lines.next() {
         let line = line?;
-        let line: Vec<&str> = line.split("  ").filter(|x| !x.is_empty()).collect();
+        let line: Vec<&str> = line
+            .split(";")
+            .next() // use all of line prior to a comment
+            .unwrap()
+            .split("  ")
+            .filter(|x| !x.is_empty())
+            .collect();
+
         for item in line {
-            if item.starts_with(";") {
-                break;
-            }
             print!("{item} / ");
         }
         println!();
