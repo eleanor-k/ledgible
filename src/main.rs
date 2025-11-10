@@ -19,13 +19,22 @@
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    for line in BufReader::new(std::fs::File::open(match std::env::var("LEDGER_FILE") {
+    let mut lines = BufReader::new(std::fs::File::open(match std::env::var("LEDGER_FILE") {
         Ok(val) => val,
         Err(_) => String::from("~/.hledger.journal"),
     })?)
-    .lines()
-    {
-        println!("{}", line.unwrap());
+    .lines();
+
+    while let Some(line) = lines.next() {
+        let line = line?;
+        let line: Vec<&str> = line.split("  ").filter(|x| !x.is_empty()).collect();
+        for item in line {
+            if item.starts_with(";") {
+                break;
+            }
+            print!("{item} / ");
+        }
+        println!();
     }
 
     Ok(())
