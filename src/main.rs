@@ -33,7 +33,8 @@ fn main() -> std::io::Result<()> {
             // crude, but assume split
             max_acct_len = max_acct_len.max(tokens[0].chars().count()); // len() != length
             // 4 from indent + 2 between account and amount
-            max_line_len = max_line_len.max(max_acct_len + tokens[1].chars().count() + 6);
+            max_line_len =
+                max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 6);
         } else {
             max_line_len = max_line_len.max(strip_comments(line).chars().count());
         }
@@ -51,7 +52,11 @@ fn main() -> std::io::Result<()> {
         println!(
             "{:max_line_len$}{}",
             match tokens.len() {
-                2 => format!("    {:max_acct_len$}  {}", tokens[0], tokens[1]),
+                2 => format!(
+                    "    {:max_acct_len$}  {}",
+                    tokens[0],
+                    format_amount(&tokens[1])
+                ),
                 _ => strip_comments(line).to_string(),
             },
             comments(line)
@@ -63,7 +68,6 @@ fn main() -> std::io::Result<()> {
 
 fn tokenize(line: &str) -> Vec<String> {
     strip_comments(line)
-        .trim_start()
         .split("  ")
         .filter(|x| !x.is_empty())
         .map(|x| x.trim().to_string())
@@ -86,4 +90,61 @@ fn strip_comments(line: &str) -> String {
         None => line.to_string(),
         Some((x, _)) => x.trim_end().to_string(),
     }
+}
+
+/// This does not determine if the amount is a valid number.
+/// It only assesses whether it is comprised of chars that compose a number.
+fn format_amount(token: &str) -> String {
+    let currency_prefix = !is_number_component(token.chars().next().unwrap());
+    let mut number = String::new();
+    let mut currency = String::new();
+
+    let mut is_number = false;
+    let mut is_currency = false;
+
+    // this loop could probably be refactored
+    for char in token.chars() {
+        if is_number {
+            if is_number_component(char) {
+                number.push(char);
+                continue;
+            } else {
+                is_number = false;
+            }
+        } else if is_currency {
+            if char == ' ' || is_number_component(char) {
+                is_currency = false;
+            } else {
+                currency.push(char);
+                continue;
+            }
+        }
+
+        // if we're not building a currency or number, start building
+        if is_number_component(char) {
+            assert!(number.is_empty());
+            is_number = true;
+            number.push(char);
+        } else if char != ' ' {
+            // is not part of a number; should be currency
+            assert!(currency.is_empty());
+            is_currency = true;
+            currency.push(char);
+        }
+    }
+
+    if currency.is_empty() {
+        number
+    } else if currency_prefix {
+        match number.chars().next().unwrap() {
+            '-' => format!("{currency}{number}"),
+            _ => format!("{currency} {number}"),
+        }
+    } else {
+        format!("{number} {currency}")
+    }
+}
+
+fn is_number_component(char: char) -> bool {
+    char.is_ascii_digit() || char == '-' || char == '.' || char == ','
 }
