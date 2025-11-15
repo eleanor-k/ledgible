@@ -16,11 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+use clap::{Arg, command, error::ErrorKind};
 use std::io::Read;
 
 fn main() -> std::io::Result<()> {
+    let mut cmd = command!().arg(
+        Arg::new("input")
+            .short('i')
+            .long("input")
+            .value_name("FILE"),
+    );
+
     let mut ledger = String::new();
-    std::io::stdin().read_to_string(&mut ledger)?;
+    if let Some(file) = cmd.get_matches_mut().get_one::<String>("input") {
+        let read = std::fs::read_to_string(file);
+        match read {
+            Ok(file) => ledger = file,
+            Err(_) => cmd.error(ErrorKind::Io, "Cannot read file").exit(),
+        }
+    } else {
+        std::io::stdin().read_to_string(&mut ledger)?;
+    }
 
     let mut max_acct_len = 0;
     let mut max_line_len = 0;

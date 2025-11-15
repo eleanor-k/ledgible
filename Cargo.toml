@@ -5,3 +5,6 @@ edition = "2024"
 repository = "https://git.sr.ht/~eleanor/ledgible"
 license = "GPL-3.0-or-later"
 description = "Formatter for hledger journals"
+
+[dependencies]
+clap = { version = "4.5.51", features = ["cargo"] }
