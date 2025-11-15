@@ -16,13 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use std::io::{BufRead, BufReader};
+use std::io::Read;
 
 fn main() -> std::io::Result<()> {
-    let ledger = std::fs::read_to_string(match std::env::var("LEDGER_FILE") {
-        Ok(val) => val,
-        Err(_) => String::from("~/.hledger.journal"),
-    })?;
+    let mut ledger = String::new();
+    std::io::stdin().read_to_string(&mut ledger)?;
 
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
