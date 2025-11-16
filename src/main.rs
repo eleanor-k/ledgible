@@ -41,20 +41,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .conflicts_with("output")
                 .action(clap::ArgAction::SetTrue)
                 .help("Overwrite input file"),
+        )
+        .arg(
+            Arg::new("env")
+                .short('e')
+                .long("env")
+                .conflicts_with("input")
+                .action(clap::ArgAction::SetTrue)
+                .help("Read journal from $LEDGER_FILE"),
         );
     let matches = cmd.get_matches_mut();
 
     // Read appropriate input into `ledger`
     let mut ledger = String::new();
     let input = matches.get_one::<String>("input");
-    if let Some(file) = input {
-        let read = std::fs::read_to_string(file);
-        match read {
-            Ok(file) => ledger = file,
-            Err(_) => cmd.error(ErrorKind::Io, "Cannot read file").exit(),
-        }
-    } else {
-        stdin().read_to_string(&mut ledger)?;
+
+    match input {
+        Some(file) => ledger = read_file(&mut cmd, file),
+        None => match matches.get_flag("env") {
+            true => ledger = read_file(&mut cmd, &std::env::var("LEDGER_FILE")?),
+            false => {
+                let _ = stdin().read_to_string(&mut ledger).unwrap();
+            }
+        },
     }
 
     let mut max_acct_len = 0;
@@ -69,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             max_line_len =
                 max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 6);
         } else {
-            max_line_len = max_line_len.max(strip_comments(line).chars().count());
+            max_line_len = max_line_len.max(split_comments(line).0.chars().count());
         }
     }
 
@@ -92,9 +101,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     tokens[0],
                     format_amount(&tokens[1])
                 ),
-                _ => strip_comments(line),
+                _ => split_comments(line).0,
             },
-            comments(line)
+            split_comments(line).1
         )?;
     }
 
@@ -115,28 +124,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn tokenize(line: &str) -> Vec<String> {
-    strip_comments(line)
+    split_comments(line)
+        .0
         .split("  ")
         .map(|x| x.trim().to_string())
         .filter(|x| !x.is_empty())
         .collect()
 }
 
-fn comments(line: &str) -> String {
+/// Splits a line into its data and comments components.
+///
+/// Return value is a `String` tuple of the form `(data, comments)`.
+fn split_comments(line: &str) -> (String, String) {
     if line.trim_start().starts_with(";") {
-        return line.to_string();
+        return (String::from(""), line.to_string());
     }
 
     match line.split_once(";") {
-        None => String::from(""),
-        Some((_, x)) => format!(" ;{x}"),
-    }
-}
-
-fn strip_comments(line: &str) -> String {
-    match line.split_once(";") {
-        None => line.to_string(),
-        Some((x, _)) => x.trim_end().to_string(),
+        None => (line.to_string(), String::from("")),
+        Some((data, comments)) => (data.to_string(), comments.to_string()),
     }
 }
 
@@ -195,4 +201,11 @@ fn format_amount(token: &str) -> String {
 
 fn is_number_component(char: char) -> bool {
     char.is_ascii_digit() || char == '-' || char == '.' || char == ','
+}
+
+fn read_file(cmd: &mut clap::Command, file: &str) -> String {
+    match std::fs::read_to_string(file) {
+        Ok(file) => file,
+        Err(_) => cmd.error(ErrorKind::Io, "Cannot read file").exit(),
+    }
 }
