@@ -22,16 +22,17 @@ use std::io::Read;
 fn main() -> std::io::Result<()> {
     let mut cmd = command!()
         .arg(Arg::new("input").value_name("FILE").help("Input file"))
-        // TODO: implement
         .arg(
             Arg::new("output")
                 .short('o')
                 .long("output")
                 .value_name("FILE"),
         );
+    let matches = cmd.get_matches_mut();
 
+    // Read appropriate input into `ledger`
     let mut ledger = String::new();
-    if let Some(file) = cmd.get_matches_mut().get_one::<String>("input") {
+    if let Some(file) = matches.get_one::<String>("input") {
         let read = std::fs::read_to_string(file);
         match read {
             Ok(file) => ledger = file,
@@ -40,6 +41,13 @@ fn main() -> std::io::Result<()> {
     } else {
         std::io::stdin().read_to_string(&mut ledger)?;
     }
+
+    // Setup output
+    let mut output: Box<dyn std::io::Write>;
+    output = match matches.get_one::<String>("output") {
+        Some(file) => Box::new(std::fs::File::create(file).unwrap()),
+        None => Box::new(std::io::stdout()),
+    };
 
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
@@ -60,13 +68,14 @@ fn main() -> std::io::Result<()> {
     // write cycle
     for line in ledger.lines() {
         if line.trim_start().starts_with(";") {
-            println!("{line}");
+            writeln!(&mut output, "{line}")?;
             continue;
         }
 
         let tokens = tokenize(line);
 
-        println!(
+        writeln!(
+            &mut output,
             "{:max_line_len$}{}",
             match tokens.len() {
                 2 => format!(
@@ -77,7 +86,7 @@ fn main() -> std::io::Result<()> {
                 _ => strip_comments(line),
             },
             comments(line)
-        );
+        )?;
     }
 
     Ok(())
