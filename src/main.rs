@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use clap::{Arg, command, error::ErrorKind};
+use clap::{command, error::ErrorKind, Arg};
 use std::{
     fmt::Write,
     fs::write,
-    io::{Read, stdin},
+    io::{stdin, Read},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if tokens.len() == 2 {
             // crude, but assume split
             max_acct_len = max_acct_len.max(tokens[0].chars().count()); // len() != length
-            // 4 from indent + 2 between account and amount
+                                                                        // 4 from indent + 2 between account and amount
             max_line_len =
                 max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 6);
         } else {

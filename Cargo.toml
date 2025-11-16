@@ -1,7 +1,8 @@
 [package]
 name = "ledgible"
 version = "0.0.0"
-edition = "2024"
+edition = "2018"
+rust-version = "1.74.1"
 repository = "https://git.sr.ht/~eleanor/ledgible"
 license = "GPL-3.0-or-later"
 description = "Formatter for hledger journals"
