@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use clap::{command, error::ErrorKind, Arg};
+use clap::{Arg, command, error::ErrorKind};
 use std::{
     fmt::Write,
     fs::write,
-    io::{stdin, Read},
+    io::{Read, stdin},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -52,18 +52,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     let matches = cmd.get_matches_mut();
 
+    // Set `input` to correct file
+    let input = match matches.get_flag("env") {
+        true => match std::env::var("LEDGER_FILE") {
+            Ok(file) => Some(&file.clone()),
+            Err(_) => panic!("Error reading $LEDGER_FILE"),
+        },
+        false => matches.get_one::<String>("input"),
+    };
+
     // Read appropriate input into `ledger`
     let mut ledger = String::new();
-    let input = matches.get_one::<String>("input");
-
     match input {
-        Some(file) => ledger = read_file(&mut cmd, file),
-        None => match matches.get_flag("env") {
-            true => ledger = read_file(&mut cmd, &std::env::var("LEDGER_FILE")?),
-            false => {
-                let _ = stdin().read_to_string(&mut ledger).unwrap();
+        Some(file) => {
+            ledger = match std::fs::read_to_string(file) {
+                Ok(file) => file,
+                Err(_) => cmd.error(ErrorKind::Io, "Cannot read file").exit(),
             }
-        },
+        }
+        None => {
+            let _ = stdin().read_to_string(&mut ledger).unwrap();
+        }
     }
 
     let mut max_acct_len = 0;
@@ -74,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if tokens.len() == 2 {
             // crude, but assume split
             max_acct_len = max_acct_len.max(tokens[0].chars().count()); // len() != length
-                                                                        // 4 from indent + 2 between account and amount
+            // 4 from indent + 2 between account and amount
             max_line_len =
                 max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 6);
         } else {
@@ -201,11 +210,4 @@ fn format_amount(token: &str) -> String {
 
 fn is_number_component(char: char) -> bool {
     char.is_ascii_digit() || char == '-' || char == '.' || char == ','
-}
-
-fn read_file(cmd: &mut clap::Command, file: &str) -> String {
-    match std::fs::read_to_string(file) {
-        Ok(file) => file,
-        Err(_) => cmd.error(ErrorKind::Io, "Cannot read file").exit(),
-    }
 }
