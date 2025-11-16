@@ -4,4 +4,5 @@ cargo clippy
 cargo check
 cargo test
 cargo msrv verify
+markdownlint *.md
 git commit
