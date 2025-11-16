@@ -27,12 +27,22 @@ fn main() -> std::io::Result<()> {
                 .short('o')
                 .long("output")
                 .value_name("FILE"),
+        )
+        .arg(
+            Arg::new("overwrite")
+                .short('i')
+                .long("inplace")
+                .requires("input")
+                .conflicts_with("output")
+                .action(clap::ArgAction::SetTrue)
+                .help("Overwrite input file"),
         );
     let matches = cmd.get_matches_mut();
 
     // Read appropriate input into `ledger`
     let mut ledger = String::new();
-    if let Some(file) = matches.get_one::<String>("input") {
+    let input = matches.get_one::<String>("input");
+    if let Some(file) = input {
         let read = std::fs::read_to_string(file);
         match read {
             Ok(file) => ledger = file,
@@ -45,8 +55,11 @@ fn main() -> std::io::Result<()> {
     // Setup output
     let mut output: Box<dyn std::io::Write>;
     output = match matches.get_one::<String>("output") {
-        Some(file) => Box::new(std::fs::File::create(file).unwrap()),
-        None => Box::new(std::io::stdout()),
+        Some(file) => Box::new(std::fs::File::create(file)?),
+        None => match matches.get_flag("overwrite") {
+            true => Box::new(std::fs::File::create(input.unwrap())?),
+            false => Box::new(std::io::stdout()),
+        },
     };
 
     let mut max_acct_len = 0;
