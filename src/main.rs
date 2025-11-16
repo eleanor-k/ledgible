@@ -17,16 +17,21 @@
  */
 
 use clap::{Arg, command, error::ErrorKind};
-use std::io::Read;
+use std::{
+    fmt::Write,
+    fs::write,
+    io::{Read, stdin},
+};
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = command!()
-        .arg(Arg::new("input").value_name("FILE").help("Input file"))
+        .arg(Arg::new("input").value_name("FILE").help("Input journal"))
         .arg(
             Arg::new("output")
                 .short('o')
                 .long("output")
-                .value_name("FILE"),
+                .value_name("FILE")
+                .help("Write formatted journal to file"),
         )
         .arg(
             Arg::new("overwrite")
@@ -49,18 +54,8 @@ fn main() -> std::io::Result<()> {
             Err(_) => cmd.error(ErrorKind::Io, "Cannot read file").exit(),
         }
     } else {
-        std::io::stdin().read_to_string(&mut ledger)?;
+        stdin().read_to_string(&mut ledger)?;
     }
-
-    // Setup output
-    let mut output: Box<dyn std::io::Write>;
-    output = match matches.get_one::<String>("output") {
-        Some(file) => Box::new(std::fs::File::create(file)?),
-        None => match matches.get_flag("overwrite") {
-            true => Box::new(std::fs::File::create(input.unwrap())?),
-            false => Box::new(std::io::stdout()),
-        },
-    };
 
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
@@ -79,16 +74,17 @@ fn main() -> std::io::Result<()> {
     }
 
     // write cycle
+    let mut buffer = String::new();
     for line in ledger.lines() {
         if line.trim_start().starts_with(";") {
-            writeln!(&mut output, "{line}")?;
+            writeln!(&mut buffer, "{line}")?;
             continue;
         }
 
         let tokens = tokenize(line);
 
         writeln!(
-            &mut output,
+            &mut buffer,
             "{:max_line_len$}{}",
             match tokens.len() {
                 2 => format!(
@@ -101,6 +97,19 @@ fn main() -> std::io::Result<()> {
             comments(line)
         )?;
     }
+
+    // Write output
+    match matches.get_one::<String>("output") {
+        Some(file) => write(file, buffer)?,
+        None => match matches.get_flag("overwrite") {
+            true => {
+                let tempfile = format!("{}.old", input.unwrap());
+                write(&tempfile, buffer)?;
+                std::fs::rename(tempfile, input.unwrap())?
+            }
+            false => print!("{buffer}"),
+        },
+    };
 
     Ok(())
 }
