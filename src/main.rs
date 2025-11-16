@@ -20,12 +20,15 @@ use clap::{Arg, command, error::ErrorKind};
 use std::io::Read;
 
 fn main() -> std::io::Result<()> {
-    let mut cmd = command!().arg(
-        Arg::new("input")
-            .short('i')
-            .long("input")
-            .value_name("FILE"),
-    );
+    let mut cmd = command!()
+        .arg(Arg::new("input").value_name("FILE").help("Input file"))
+        // TODO: implement
+        .arg(
+            Arg::new("output")
+                .short('o')
+                .long("output")
+                .value_name("FILE"),
+        );
 
     let mut ledger = String::new();
     if let Some(file) = cmd.get_matches_mut().get_one::<String>("input") {
@@ -71,7 +74,7 @@ fn main() -> std::io::Result<()> {
                     tokens[0],
                     format_amount(&tokens[1])
                 ),
-                _ => strip_comments(line).to_string(),
+                _ => strip_comments(line),
             },
             comments(line)
         );
