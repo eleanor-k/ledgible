@@ -80,9 +80,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for line in ledger.lines() {
         let tokens = tokenize(line);
 
-        if tokens.len() == 2 {
+        if tokens.len() == 1 && tokens[0].chars().next().unwrap().is_ascii_digit() {
+            // TODO: Date processing
+            max_line_len = max_line_len.max(split_comments(line).0.chars().count());
+        } else if tokens.len() == 2 {
             // crude, but assume split
-            max_acct_len = max_acct_len.max(tokens[0].chars().count()); // len() != length
+            // the + 2/4 accounts for the additional spaces added by format_account()
+            max_acct_len = max_acct_len
+                .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
             // 4 from indent + 2 between account and amount
             max_line_len =
                 max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 6);
@@ -106,9 +111,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "{:max_line_len$}{}",
             match tokens.len() {
                 2 => format!(
-                    "    {:max_acct_len$}  {}",
-                    tokens[0],
-                    format_amount(&tokens[1])
+                    "{:max_acct_len$}  {}",
+                    format_account(&tokens[0]),
+                    format_amount(&tokens[1]),
                 ),
                 _ => split_comments(line).0,
             },
@@ -208,6 +213,18 @@ fn format_amount(token: &str) -> String {
     }
 }
 
+fn format_account(account: &str) -> String {
+    if has_status(account) { "  " } else { "    " }.to_string() + account
+}
+
 fn is_number_component(char: char) -> bool {
     char.is_ascii_digit() || char == '-' || char == '.' || char == ','
+}
+
+fn has_status(token: &str) -> bool {
+    let mut chars = token.chars();
+    match chars.next().unwrap() {
+        '!' | '*' => chars.next().unwrap().is_ascii_whitespace(),
+        _ => false,
+    }
 }

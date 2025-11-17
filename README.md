@@ -64,6 +64,7 @@ Both `rustup` and `markdownlint-cli` are available via package managers such as
 
 In no particular order:
 
+- [ ] Remove empty lines at top of journal
 - [ ] Fully conform to ledger journal standard
 - [ ] Standardize dates
 - [ ] Per-currency/commodity formatting
