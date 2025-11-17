@@ -151,7 +151,7 @@ fn split_comments(line: &str) -> (String, String) {
 
     match line.split_once(";") {
         None => (line.to_string(), String::from("")),
-        Some((data, comments)) => (data.to_string(), comments.to_string()),
+        Some((data, comments)) => (data.to_string(), format!(" ;{comments}")),
     }
 }
 
