@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut buffer = String::new();
     for line in ledger.lines() {
         if line.trim_start().starts_with(";") {
-            writeln!(&mut buffer, "{line}")?;
+            writeln!(&mut buffer, "{}", line.trim_end())?;
             continue;
         }
 
@@ -108,16 +108,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         writeln!(
             &mut buffer,
-            "{:max_line_len$}{}",
-            match tokens.len() {
-                2 => format!(
-                    "{:max_acct_len$}  {}",
-                    format_account(&tokens[0]),
-                    format_amount(&tokens[1]),
-                ),
-                _ => split_comments(line).0,
-            },
-            split_comments(line).1
+            "{}",
+            format!(
+                "{:max_line_len$}{}",
+                match tokens.len() {
+                    2 => format!(
+                        "{:max_acct_len$}  {}",
+                        format_account(&tokens[0]),
+                        format_amount(&tokens[1]),
+                    ),
+                    _ => split_comments(line).0,
+                },
+                split_comments(line).1
+            )
+            .trim_end()
         )?;
     }
 

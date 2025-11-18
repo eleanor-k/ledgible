@@ -64,6 +64,9 @@ Both `rustup` and `markdownlint-cli` are available via package managers such as
 
 In no particular order:
 
+- [ ] Align posting amounts to decimal place
+- [ ] Handle negative sign on other side of currency
+- [ ] Parse numbers with spaces in them (e.g. $10 000 or $- 100)
 - [ ] Remove empty lines at top of journal
 - [ ] Fully conform to ledger journal standard
 - [ ] Standardize dates
