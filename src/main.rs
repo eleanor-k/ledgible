@@ -18,7 +18,6 @@
 
 use clap::{Arg, command, error::ErrorKind};
 use std::{
-    fmt::Write,
     fs::write,
     io::{Read, stdin},
 };
@@ -75,6 +74,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    let mut buffer = String::new();
+
+    format(&mut buffer, &ledger)?;
+
+    // Write output
+    match matches.get_one::<String>("output") {
+        Some(file) => write(file, buffer)?,
+        None => match matches.get_flag("overwrite") {
+            true => {
+                let tempfile = format!("{}.old", input.unwrap());
+                write(&tempfile, buffer)?;
+                std::fs::rename(tempfile, input.unwrap())?
+            }
+            false => print!("{buffer}"),
+        },
+    };
+
+    Ok(())
+}
+
+fn format(buffer: &mut dyn std::fmt::Write, ledger: &str) -> Result<(), std::fmt::Error> {
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
     for line in ledger.lines() {
@@ -97,17 +117,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // write cycle
-    let mut buffer = String::new();
     for line in ledger.lines() {
         if line.trim_start().starts_with(";") {
-            writeln!(&mut buffer, "{}", line.trim_end())?;
+            writeln!(buffer, "{}", line.trim_end())?;
             continue;
         }
 
         let tokens = tokenize(line);
 
         writeln!(
-            &mut buffer,
+            buffer,
             "{}",
             format!(
                 "{:max_line_len$}{}",
@@ -124,20 +143,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .trim_end()
         )?;
     }
-
-    // Write output
-    match matches.get_one::<String>("output") {
-        Some(file) => write(file, buffer)?,
-        None => match matches.get_flag("overwrite") {
-            true => {
-                let tempfile = format!("{}.old", input.unwrap());
-                write(&tempfile, buffer)?;
-                std::fs::rename(tempfile, input.unwrap())?
-            }
-            false => print!("{buffer}"),
-        },
-    };
-
     Ok(())
 }
 
