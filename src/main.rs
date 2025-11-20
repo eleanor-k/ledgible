@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-mod format;
-
 use clap::{Arg, command, error::ErrorKind};
 use std::{
     fs::write,
@@ -78,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut buffer = String::new();
 
-    format::format(&mut buffer, &ledger)?;
+    ledgible::format(&mut buffer, &ledger)?;
 
     // Write output
     match matches.get_one::<String>("output") {
