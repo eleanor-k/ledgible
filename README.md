@@ -9,9 +9,11 @@ Rust version 1.89.0 or later is required to compile.
 
 After installing [`rustup`](https://rustup.rs),
 
-```sh
-cargo install ledgible --git https://git.sr.ht/~eleanor/ledgible --branch main
-```
+`cargo install ledgible`
+
+or, for the development version,
+
+`cargo install ledgible --git https://git.sr.ht/~eleanor/ledgible --branch main`
 
 ## Options
 
