@@ -108,9 +108,9 @@ fn format(buffer: &mut dyn std::fmt::Write, ledger: &str) -> Result<(), std::fmt
             // the + 2/4 accounts for the additional spaces added by format_account()
             max_acct_len = max_acct_len
                 .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
-            // 4 from indent + 2 between account and amount
+            // + 2 spaces between account and amount
             max_line_len =
-                max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 6);
+                max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 2);
         } else {
             max_line_len = max_line_len.max(split_comments(line).0.chars().count());
         }
@@ -160,12 +160,15 @@ fn tokenize(line: &str) -> Vec<String> {
 /// Return value is a `String` tuple of the form `(data, comments)`.
 fn split_comments(line: &str) -> (String, String) {
     if line.trim_start().starts_with(";") {
-        return (String::from(""), line.to_string());
+        return (String::from(""), line.trim_end().to_string());
     }
 
     match line.split_once(";") {
-        None => (line.to_string(), String::from("")),
-        Some((data, comments)) => (data.to_string(), format!(" ;{comments}")),
+        None => (line.trim_end().to_string(), String::from("")),
+        Some((data, comments)) => (
+            data.trim_end().to_string(),
+            String::from(" ;") + comments.trim_end(),
+        ),
     }
 }
 
@@ -210,20 +213,24 @@ fn format_amount(token: &str) -> String {
         }
     }
 
-    if currency.is_empty() {
-        number
-    } else if currency_prefix {
-        match number.chars().next().unwrap() {
-            '-' => format!("{currency}{number}"),
-            _ => format!("{currency} {number}"),
+    {
+        if currency.is_empty() {
+            number.to_string()
+        } else if currency_prefix {
+            match number.chars().next().unwrap() {
+                '-' => format!("{currency}{number}"),
+                _ => format!("{currency} {number}"),
+            }
+        } else {
+            format!("{number} {currency}")
         }
-    } else {
-        format!("{number} {currency}")
     }
+    .trim_end()
+    .to_string()
 }
 
 fn format_account(account: &str) -> String {
-    if has_status(account) { "  " } else { "    " }.to_string() + account
+    if has_status(account) { "  " } else { "    " }.to_string() + account.trim()
 }
 
 fn is_number_component(char: char) -> bool {
