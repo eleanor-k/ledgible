@@ -1,7 +1,8 @@
 # ledgible
 
-Formatter for [`hledger`](https://hledger.org/) journals. This is **not** ready
-for production use.
+Formatter for [`ledger`](https://ledger-cli.org/) and
+[`hledger`](https://hledger.org/) journals. This is **not** ready for production
+use.
 
 Rust version 1.89.0 or later is required to compile.
 
@@ -66,6 +67,7 @@ Both `rustup` and `markdownlint-cli` are available via package managers such as
 
 In no particular order:
 
+- [ ] Remove extra spaces between amount and currency
 - [ ] Sort postings to be consistent across transactions
 - [ ] Align posting amounts to decimal place
 - [ ] Handle negative sign on other side of currency
