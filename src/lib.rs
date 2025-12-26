@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+use std::fmt::Write;
+
 enum LineKind {
     Date,
     Posting,
@@ -30,7 +32,7 @@ struct Line {
     comment: Option<String>,
 }
 
-pub fn format(buffer: &mut impl std::fmt::Write, input: &str) -> Result<(), std::fmt::Error> {
+pub fn format(buffer: &mut String, input: &str) -> Result<(), std::fmt::Error> {
     let ledger: Vec<Line> = input.lines().map(process).collect();
 
     // Determine proper spacing
@@ -80,6 +82,8 @@ pub fn format(buffer: &mut impl std::fmt::Write, input: &str) -> Result<(), std:
             .trim_end()
         )?;
     }
+    buffer.truncate(buffer.trim_end().len());
+    buffer.push('\n');
     Ok(())
 }
 
