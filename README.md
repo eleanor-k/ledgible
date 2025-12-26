@@ -1,8 +1,7 @@
 # ledgible
 
-Formatter for [`ledger`](https://ledger-cli.org/) and
-[`hledger`](https://hledger.org/) journals. This is **not** ready for production
-use.
+Formatter for [ledger](https://ledger-cli.org/) and [hledger](https://hledger.org/)
+journals. This is **not** ready for production use.
 
 Rust version 1.89.0 or later is required to compile.
 
@@ -19,7 +18,7 @@ or, for the development version,
 ## Options
 
 ```txt
-Formatter for hledger journals
+Formatter for ledger and hledger journals
 
 Usage: ledgible [OPTIONS] [FILE]
 
@@ -30,15 +29,17 @@ Options:
   -o, --output <FILE>  Write formatted journal to file
   -i, --inplace        Overwrite input file
   -e, --env            Read journal from $LEDGER_FILE
+  -c, --check          Check whether journal is formatted properly
   -h, --help           Print help
   -V, --version        Print version
 ```
 
 ## Contributing
 
-All contributions shall be licensed under GPLv3 or later. The `./commit.sh`
-script in the repository should be run in order to ensure the commit meets
-expectations.
+All contributions shall be licensed under GPLv3 or later unless an existing file
+is explicitly licensed otherwise or with the permission of the project
+maintainer. The `./commit.sh` script in the repository should be run in order to
+ensure the commit meets expectations.
 
 ### `./commit.sh` Requirements
 
