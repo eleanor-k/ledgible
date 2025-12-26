@@ -37,10 +37,9 @@ pub fn format(buffer: &mut impl std::fmt::Write, input: &str) -> Result<(), std:
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
     for line in &ledger {
-        let tokens = tokenize(&line);
-
         match line.kind {
             LineKind::Posting => {
+                let tokens = tokenize(&line);
                 max_acct_len = max_acct_len
                     .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
                 // + 2 spaces between account and amount
@@ -119,13 +118,20 @@ fn process(data: &str) -> Line {
         },
     };
 
-    //Determine line type
+    // Determine line type
     let tokens = tokenize(&line);
 
+    // Check for blank line to avoid panic when getting first character
+    if tokens.len() == 0 {
+        line.kind = LineKind::Other;
+        return line;
+    }
+
+    let first_char = line.content.as_ref().unwrap().chars().next().unwrap();
     if tokens.len() == 1 && tokens[0].chars().next().unwrap().is_ascii_digit() {
         line.kind = LineKind::Date;
-    } else if tokens.len() == 2 {
-        // crude, but assume split
+    } else if tokens.len() > 0 && (first_char == ' ' || first_char == '\t') {
+        // only postings will start with whitespace
         line.kind = LineKind::Posting;
     } else {
         line.kind = LineKind::Other;
