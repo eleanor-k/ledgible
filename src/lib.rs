@@ -31,7 +31,7 @@ struct Line {
 }
 
 pub fn format(buffer: &mut impl std::fmt::Write, input: &str) -> Result<(), std::fmt::Error> {
-    let ledger: Vec<Line> = input.lines().map(|x| process(x)).collect();
+    let ledger: Vec<Line> = input.lines().map(process).collect();
 
     // Determine proper spacing
     let mut max_acct_len = 0;
@@ -39,7 +39,7 @@ pub fn format(buffer: &mut impl std::fmt::Write, input: &str) -> Result<(), std:
     for line in &ledger {
         match line.kind {
             LineKind::Posting => {
-                let tokens = tokenize(&line);
+                let tokens = tokenize(line);
                 max_acct_len = max_acct_len
                     .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
                 // + 2 spaces between account and amount
@@ -122,7 +122,7 @@ fn process(data: &str) -> Line {
     let tokens = tokenize(&line);
 
     // Check for blank line to avoid panic when getting first character
-    if tokens.len() == 0 {
+    if tokens.is_empty() {
         line.kind = LineKind::Other;
         return line;
     }
@@ -130,14 +130,14 @@ fn process(data: &str) -> Line {
     let first_char = line.content.as_ref().unwrap().chars().next().unwrap();
     if tokens.len() == 1 && tokens[0].chars().next().unwrap().is_ascii_digit() {
         line.kind = LineKind::Date;
-    } else if tokens.len() > 0 && (first_char == ' ' || first_char == '\t') {
+    } else if !tokens.is_empty() && (first_char == ' ' || first_char == '\t') {
         // only postings will start with whitespace
         line.kind = LineKind::Posting;
     } else {
         line.kind = LineKind::Other;
     }
 
-    return line;
+    line
 }
 
 /// This does not determine if the amount is a valid number.
