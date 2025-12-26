@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(file) => write(file, buffer)?,
         None => match matches.get_flag("overwrite") {
             true => {
-                let tempfile = format!("{}.old", input.unwrap());
+                let tempfile = format!("{}.tmp", input.unwrap());
                 write(&tempfile, buffer)?;
                 std::fs::rename(tempfile, input.unwrap())?
             }
