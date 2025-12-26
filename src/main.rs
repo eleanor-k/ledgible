@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod diff;
+
+use crate::diff::{make_diff, print_diff};
 use clap::{Arg, command, error::ErrorKind};
 use std::{
     fs::write,
@@ -87,22 +90,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ledgible::format(&mut buffer, &ledger)?;
 
     if matches.get_flag("check") {
-        if ledger.lines().count() != buffer.lines().count() {
-            cmd.error(ErrorKind::ValueValidation, "Line count mismatch")
-                .exit();
-        } else {
-            for (i, (ledger, buffer)) in ledger.lines().zip(buffer.lines()).enumerate() {
-                if ledger != buffer {
-                    cmd.error(
-                        ErrorKind::ValueValidation,
-                        format!("Formatting error on line {}", i + 1),
-                    )
-                    .exit();
-                }
+        let mismatch = make_diff(&ledger, &buffer, 3);
+        std::process::exit(match mismatch.is_empty() {
+            true => 0,
+            false => {
+                print_diff(mismatch, |n| format!("Diff at line {}:", n));
+                1
             }
-        }
-
-        std::process::exit(0);
+        })
     }
 
     // Write output
