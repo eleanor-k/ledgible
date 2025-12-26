@@ -1,5 +1,5 @@
 /*
- * ledgible - Formatter for hledger journals
+ * ledgible - Formatter for ledger and hledger journals
  * Copyright (C) 2025  Eleanor Kelley <me at eleanorkelley dot com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -48,6 +48,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .conflicts_with("input")
                 .action(clap::ArgAction::SetTrue)
                 .help("Read journal from $LEDGER_FILE"),
+        )
+        .arg(
+            Arg::new("check")
+                .short('c')
+                .long("check")
+                .conflicts_with("overwrite")
+                .action(clap::ArgAction::SetTrue)
+                .help("Check whether journal is formatted properly"),
         );
     let matches = cmd.get_matches_mut();
 
@@ -77,6 +85,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut buffer = String::new();
 
     ledgible::format(&mut buffer, &ledger)?;
+
+    if matches.get_flag("check") {
+        if ledger.lines().count() != buffer.lines().count() {
+            cmd.error(ErrorKind::ValueValidation, "Line count mismatch")
+                .exit();
+        } else {
+            for (i, (ledger, buffer)) in ledger.lines().zip(buffer.lines()).enumerate() {
+                if ledger != buffer {
+                    cmd.error(
+                        ErrorKind::ValueValidation,
+                        format!("Formatting error on line {}", i + 1),
+                    )
+                    .exit();
+                }
+            }
+        }
+
+        std::process::exit(0);
+    }
 
     // Write output
     match matches.get_one::<String>("output") {

@@ -67,6 +67,7 @@ Both `rustup` and `markdownlint-cli` are available via package managers such as
 
 In no particular order:
 
+- [ ] Remove trailing empty lines
 - [ ] Remove extra spaces between amount and currency
 - [ ] Sort postings to be consistent across transactions
 - [ ] Align posting amounts to decimal place
