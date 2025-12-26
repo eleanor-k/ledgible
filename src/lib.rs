@@ -16,82 +16,122 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-pub fn format(buffer: &mut impl std::fmt::Write, ledger: &str) -> Result<(), std::fmt::Error> {
+enum LineKind {
+    Date,
+    Posting,
+    Other,
+    Comment,
+    None,
+}
+
+struct Line {
+    kind: LineKind,
+    content: Option<String>,
+    comment: Option<String>,
+}
+
+pub fn format(buffer: &mut impl std::fmt::Write, input: &str) -> Result<(), std::fmt::Error> {
+    let ledger: Vec<Line> = input.lines().map(|x| process(x)).collect();
+
+    // Determine proper spacing
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
-    for line in ledger.lines() {
-        let tokens = tokenize(line);
+    for line in &ledger {
+        let tokens = tokenize(&line);
 
-        if tokens.len() == 1 && tokens[0].chars().next().unwrap().is_ascii_digit() {
-            // TODO: Date processing
-            max_line_len = max_line_len.max(split_comments(line).0.chars().count());
-        } else if tokens.len() == 2 {
-            // crude, but assume split
-            // the + 2/4 accounts for the additional spaces added by format_account()
-            max_acct_len = max_acct_len
-                .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
-            // + 2 spaces between account and amount
-            max_line_len =
-                max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 2);
-        } else {
-            max_line_len = max_line_len.max(split_comments(line).0.chars().count());
+        match line.kind {
+            LineKind::Posting => {
+                max_acct_len = max_acct_len
+                    .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
+                // + 2 spaces between account and amount
+                max_line_len =
+                    max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 2);
+            }
+            LineKind::Comment => (),
+            _ => max_line_len = max_line_len.max(line.content.as_ref().unwrap().chars().count()),
         }
     }
 
     // write cycle
-    for line in ledger.lines() {
-        if line.trim_start().starts_with(";") {
-            writeln!(buffer, "{}", line.trim_end())?;
-            continue;
+    for mut line in ledger {
+        match line.kind {
+            LineKind::Comment => {
+                writeln!(buffer, "{}", line.comment.unwrap())?;
+                continue;
+            }
+            LineKind::Posting => {
+                let tokens = tokenize(&line);
+                line.content = Some(format!(
+                    "{:max_acct_len$}  {}",
+                    format_account(&tokens[0]),
+                    format_amount(&tokens[1])
+                ));
+            }
+            LineKind::None => panic!("Line kind undefined"),
+            _ => (),
         }
-
-        let tokens = tokenize(line);
 
         writeln!(
             buffer,
             "{}",
-            format!(
-                "{:max_line_len$}{}",
-                match tokens.len() {
-                    2 => format!(
-                        "{:max_acct_len$}  {}",
-                        format_account(&tokens[0]),
-                        format_amount(&tokens[1]),
-                    ),
-                    _ => split_comments(line).0,
-                },
-                split_comments(line).1
-            )
+            match line.comment {
+                Some(comment) => format!("{:max_line_len$} ;{}", line.content.unwrap(), comment),
+                None => format!("{:max_line_len$}", line.content.unwrap()),
+            }
             .trim_end()
         )?;
     }
     Ok(())
 }
 
-fn tokenize(line: &str) -> Vec<String> {
-    split_comments(line)
-        .0
-        .split("  ")
-        .map(|x| x.trim().to_string())
-        .filter(|x| !x.is_empty())
-        .collect()
+fn tokenize(line: &Line) -> Vec<String> {
+    match &line.content {
+        Some(content) => content
+            .split("  ")
+            .map(|x| x.trim().to_string())
+            .filter(|x| !x.is_empty())
+            .collect(),
+        None => vec![],
+    }
 }
 
-/// Splits a line into its data and comments components.
-///
-/// Return value is a `String` tuple of the form `(data, comments)`.
-fn split_comments(line: &str) -> (String, String) {
-    if line.trim_start().starts_with(";") {
-        return (String::from(""), line.trim_end().to_string());
+// TODO: make more efficient
+fn process(data: &str) -> Line {
+    let mut line: Line;
+    if data.trim_start().starts_with(";") {
+        return Line {
+            kind: LineKind::Comment,
+            content: None,
+            comment: Some(data.trim_end().to_string()),
+        };
     }
 
-    match line.split_once(";") {
-        None => (line.trim_end().to_string(), String::from("")),
-        Some((data, comments)) => (
-            data.trim_end().to_string(),
-            String::from(" ;") + comments.trim_end(),
-        ),
+    line = match data.split_once(";") {
+        None => Line {
+            kind: LineKind::None,
+            content: Some(data.trim_end().to_string()),
+            comment: None,
+        },
+        Some((data, comment)) => Line {
+            kind: LineKind::None,
+            content: Some(data.trim_end().to_string()),
+            comment: Some(comment.trim_end().to_string()),
+        },
+    };
+
+    //Determine line type
+    let tokens = tokenize(&line);
+
+    if tokens.len() == 1 && tokens[0].chars().next().unwrap().is_ascii_digit() {
+        line.kind = LineKind::Date;
+    } else if tokens.len() == 2 {
+        // crude, but assume split
+        line.kind = LineKind::Posting;
+    } else {
+        line.kind = LineKind::Other;
     }
+
+    return line;
 }
 
 /// This does not determine if the amount is a valid number.
