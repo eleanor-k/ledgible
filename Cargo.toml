@@ -1,11 +1,11 @@
 [package]
 name = "ledgible"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.89.0"
 repository = "https://git.sr.ht/~eleanor/ledgible"
 license = "GPL-3.0-or-later"
-description = "Formatter for hledger journals"
+description = "Formatter for ledger and hledger journals"
 
 [dependencies]
 clap = { version = "4.5.51", features = ["cargo"] }

@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 0.3.0
+
+- Rename `format.rs` to `lib.rs`
+- Use `.tmp` file extension instead of `.old` for temp file when writing in
+place
+- Check for indentation instead of token count to determine if line is posting
+
 ## Version 0.2.0
 
 - Remove extraneous whitespace from ledger
