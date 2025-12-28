@@ -175,7 +175,7 @@ fn assign_kind(mut line: Line) -> Line {
     }
 
     let first_char = line.content.as_ref().unwrap().chars().next().unwrap();
-    if tokens.len() == 1 && tokens[0].chars().next().unwrap().is_ascii_digit() {
+    if tokens[0].chars().next().unwrap().is_ascii_digit() {
         line.kind = LineKind::Date;
     } else if !tokens.is_empty() && (first_char == ' ' || first_char == '\t') {
         // only postings will start with whitespace
