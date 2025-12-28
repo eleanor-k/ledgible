@@ -24,8 +24,13 @@ use std::fmt::Write;
 // TODO: Streamline logic
 pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut ledger: Vec<Line> = Vec::new();
+
     let mut comment_block: Option<usize> = None;
-    for (i, line) in input.lines().enumerate() {
+    for (i, line) in input
+        .lines()
+        .enumerate()
+        .skip_while(|(_, line)| line.trim().is_empty())
+    {
         let i = i + 1; // Reassign to ensure line numbers make sense
 
         let mut kind = match comment_block {
@@ -255,6 +260,7 @@ fn is_number_component(char: char) -> bool {
     char.is_ascii_digit() || char == '-' || char == '.' || char == ','
 }
 
+// TODO: rewrite with `find()`?
 fn has_status(token: &str) -> bool {
     let mut chars = token.chars();
     match chars.next().unwrap() {
