@@ -32,8 +32,46 @@ struct Line {
     comment: Option<String>,
 }
 
+// TODO: Streamline logic
 pub fn format(buffer: &mut String, input: &str) -> Result<(), std::fmt::Error> {
-    let ledger: Vec<Line> = input.lines().map(process).collect();
+    let mut ledger: Vec<Line> = Vec::new();
+    let mut comment_block: Option<usize> = None;
+    for (i, line) in input.lines().enumerate() {
+        let i = i + 1; // Reassign to ensure line numbers make sense
+
+        let mut kind = match comment_block {
+            Some(_) => LineKind::Comment,
+            None => LineKind::None,
+        };
+
+        match line.trim().to_lowercase().as_str() {
+            "comment" => {
+                if comment_block.is_none() {
+                    comment_block = Some(i); // For error printing later
+                    kind = LineKind::Comment;
+                }
+            }
+            "end comment" => {
+                match comment_block {
+                    Some(_) => comment_block = None,
+                    None => panic!("Unexpected `{}` at line {}", line.trim(), i),
+                };
+            }
+            _ => (),
+        }
+
+        // Parse raw line
+        ledger.push(assign_kind(Line {
+            kind,
+            content: Some(line.to_string()),
+            comment: None,
+        }));
+    }
+
+    // Check if there's a dangling comment block
+    if let Some(i) = comment_block {
+        panic!("Unenclosed comment block at line {}", i);
+    }
 
     // Determine proper spacing
     let mut max_acct_len = 0;
@@ -98,29 +136,32 @@ fn tokenize(line: &Line) -> Vec<String> {
     }
 }
 
-// TODO: make more efficient
-fn process(data: &str) -> Line {
-    let mut line: Line;
-    if data.trim_start().starts_with([';', '#']) {
-        return Line {
-            kind: LineKind::Comment,
-            content: None,
-            comment: Some(data.trim_end().to_string()),
+fn parse_comments(line: &mut Line) {
+    let content = line.content.take().unwrap();
+    if matches!(line.kind, LineKind::Comment) || content.trim_start().starts_with([';', '#']) {
+        line.kind = LineKind::Comment;
+        line.content = None;
+        line.comment = Some(content.trim_end().to_string());
+    } else {
+        match content.split_once([';', '#']) {
+            None => {
+                line.content = Some(content.trim_end().to_string());
+                line.comment = None;
+            }
+            Some((data, comment)) => {
+                line.content = Some(data.trim_end().to_string());
+                line.comment = Some(comment.trim_end().to_string());
+            }
         };
     }
+}
 
-    line = match data.split_once([';', '#']) {
-        None => Line {
-            kind: LineKind::None,
-            content: Some(data.trim_end().to_string()),
-            comment: None,
-        },
-        Some((data, comment)) => Line {
-            kind: LineKind::None,
-            content: Some(data.trim_end().to_string()),
-            comment: Some(comment.trim_end().to_string()),
-        },
-    };
+// TODO: make more efficient
+fn assign_kind(mut line: Line) -> Line {
+    parse_comments(&mut line);
+    if let LineKind::Comment = line.kind {
+        return line;
+    }
 
     // Determine line type
     let tokens = tokenize(&line);
