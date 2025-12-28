@@ -36,10 +36,10 @@ Options:
 
 ## Contributing
 
-All contributions shall be licensed under GPLv3 or later unless an existing file
-is explicitly licensed otherwise or with the permission of the project
-maintainer. The `./commit.sh` script in the repository should be run in order to
-ensure the commit meets expectations.
+All contributions shall be licensed under GPLv3 or later, except to comply with
+the license of an existing file in the repository or with the permission of the
+project maintainer. The `./commit.sh` script in the repository should be run in
+order to ensure the commit meets expectations.
 
 ### `./commit.sh` Requirements
 

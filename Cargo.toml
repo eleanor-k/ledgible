@@ -9,5 +9,4 @@ description = "Formatter for ledger and hledger journals"
 
 [dependencies]
 clap = { version = "4.5.51", features = ["cargo"] }
-diff = "0.1.13"
-term = "1.2.1"
+diffy = "0.4.2"

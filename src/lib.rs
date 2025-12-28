@@ -21,8 +21,8 @@ use std::fmt::Write;
 enum LineKind {
     Date,
     Posting,
-    Other,
     Comment,
+    Other,
     None,
 }
 

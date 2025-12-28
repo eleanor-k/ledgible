@@ -16,9 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-mod diff;
-
-use crate::diff::{make_diff, print_diff};
 use clap::{Arg, command, error::ErrorKind};
 use std::{
     fs::write,
@@ -90,14 +87,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ledgible::format(&mut buffer, &ledger)?;
 
     if matches.get_flag("check") {
-        let mismatch = make_diff(&ledger, &buffer, 3);
-        std::process::exit(match mismatch.is_empty() {
+        let diff = diffy::create_patch(&ledger, &buffer);
+        std::process::exit(match diff.hunks().is_empty() {
             true => 0,
             false => {
-                print_diff(mismatch, |n| format!("Diff at line {}:", n));
+                print!(
+                    "{}",
+                    diffy::PatchFormatter::new().with_color().fmt_patch(&diff)
+                );
                 1
             }
-        })
+        });
     }
 
     // Write output
