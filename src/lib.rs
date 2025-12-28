@@ -33,7 +33,7 @@ struct Line {
 }
 
 // TODO: Streamline logic
-pub fn format(buffer: &mut String, input: &str) -> Result<(), std::fmt::Error> {
+pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut ledger: Vec<Line> = Vec::new();
     let mut comment_block: Option<usize> = None;
     for (i, line) in input.lines().enumerate() {
@@ -54,7 +54,9 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), std::fmt::Error> {
             "end comment" => {
                 match comment_block {
                     Some(_) => comment_block = None,
-                    None => panic!("Unexpected `{}` at line {}", line.trim(), i),
+                    None => {
+                        return Err(format!("Unexpected `{}` at line {}", line.trim(), i).into());
+                    }
                 };
             }
             _ => (),
@@ -70,7 +72,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), std::fmt::Error> {
 
     // Check if there's a dangling comment block
     if let Some(i) = comment_block {
-        panic!("Unenclosed comment block at line {}", i);
+        return Err(format!("Unenclosed comment block at line {}", i).into());
     }
 
     // Determine proper spacing
@@ -106,7 +108,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), std::fmt::Error> {
                     format_amount(&tokens[1])
                 ));
             }
-            LineKind::None => panic!("Line kind undefined"),
+            LineKind::None => return Err("Line kind undefined".into()),
             _ => (),
         }
 
@@ -166,7 +168,7 @@ fn assign_kind(mut line: Line) -> Line {
     // Determine line type
     let tokens = tokenize(&line);
 
-    // Check for blank line to avoid panic when getting first character
+    // Check for blank line to avoid error when getting first character
     if tokens.is_empty() {
         line.kind = LineKind::Other;
         return line;
