@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .requires("input")
                 .conflicts_with("output")
                 .action(clap::ArgAction::SetTrue)
-                .help("Overwrite input file"),
+                .help("(DANGEROUS) Overwrite input file"),
         )
         .arg(
             Arg::new("env")

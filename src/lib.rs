@@ -26,10 +26,22 @@ enum LineKind {
     None,
 }
 
+enum Delimiter {
+    Hash,
+    Semicolon,
+    None,
+}
+
 struct Line {
     kind: LineKind,
     content: Option<String>,
-    comment: Option<String>,
+    comment: Option<Comment>,
+}
+
+// TODO: implement Display
+struct Comment {
+    delimiter: Delimiter,
+    content: String,
 }
 
 // TODO: Streamline logic
@@ -97,7 +109,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
     for mut line in ledger {
         match line.kind {
             LineKind::Comment => {
-                writeln!(buffer, "{}", line.comment.unwrap())?;
+                writeln!(buffer, "{}", line.comment.unwrap().content)?;
                 continue;
             }
             LineKind::Posting => {
@@ -116,7 +128,16 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
             buffer,
             "{}",
             match line.comment {
-                Some(comment) => format!("{:max_line_len$} ;{}", line.content.unwrap(), comment),
+                Some(comment) => format!(
+                    "{:max_line_len$} {}{}",
+                    line.content.unwrap(),
+                    match comment.delimiter {
+                        Delimiter::Semicolon => ';',
+                        Delimiter::Hash => '#',
+                        Delimiter::None => unreachable!(),
+                    },
+                    comment.content
+                ),
                 None => format!("{:max_line_len$}", line.content.unwrap()),
             }
             .trim_end()
@@ -143,18 +164,32 @@ fn parse_comments(line: &mut Line) {
     if matches!(line.kind, LineKind::Comment) || content.trim_start().starts_with([';', '#']) {
         line.kind = LineKind::Comment;
         line.content = None;
-        line.comment = Some(content.trim_end().to_string());
+        line.comment = Some(Comment {
+            // This can probably be handled better
+            delimiter: Delimiter::None,
+            content: content.trim_end().to_string(),
+        });
     } else {
-        match content.split_once([';', '#']) {
+        match content.find([';', '#']) {
+            Some(index) => {
+                let delimiter = match content.chars().nth(index).unwrap() {
+                    ';' => Delimiter::Semicolon,
+                    '#' => Delimiter::Hash,
+                    _ => unreachable!(),
+                };
+
+                let (content, comment) = content.split_at(index);
+                line.content = Some(content.trim_end().to_string());
+                line.comment = Some(Comment {
+                    delimiter,
+                    content: comment[1..].trim_end().to_string(),
+                });
+            }
             None => {
                 line.content = Some(content.trim_end().to_string());
                 line.comment = None;
             }
-            Some((data, comment)) => {
-                line.content = Some(data.trim_end().to_string());
-                line.comment = Some(comment.trim_end().to_string());
-            }
-        };
+        }
     }
 }
 

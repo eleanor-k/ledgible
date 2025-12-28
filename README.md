@@ -27,7 +27,7 @@ Arguments:
 
 Options:
   -o, --output <FILE>  Write formatted journal to file
-  -i, --inplace        Overwrite input file
+  -i, --inplace        (DANGEROUS) Overwrite input file
   -e, --env            Read journal from $LEDGER_FILE
   -c, --check          Check whether journal is formatted properly
   -h, --help           Print help
