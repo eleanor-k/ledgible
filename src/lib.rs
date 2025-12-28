@@ -16,47 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod types;
+
+use crate::types::*;
 use std::fmt::Write;
-
-enum LineKind {
-    Date,
-    Posting,
-    Comment,
-    Other,
-    None,
-}
-
-enum Delimiter {
-    Hash,
-    Semicolon,
-    None,
-}
-
-struct Line {
-    kind: LineKind,
-    content: Option<String>,
-    comment: Option<Comment>,
-}
-
-struct Comment {
-    delimiter: Delimiter,
-    content: String,
-}
-
-impl std::fmt::Display for Comment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}{}",
-            match self.delimiter {
-                Delimiter::Hash => "#",
-                Delimiter::Semicolon => ";",
-                Delimiter::None => "",
-            },
-            self.content
-        )
-    }
-}
 
 // TODO: Streamline logic
 pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error::Error>> {
