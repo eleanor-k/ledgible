@@ -260,11 +260,10 @@ fn is_number_component(char: char) -> bool {
     char.is_ascii_digit() || char == '-' || char == '.' || char == ','
 }
 
-// TODO: rewrite with `find()`?
 fn has_status(token: &str) -> bool {
     let mut chars = token.chars();
     match chars.next().unwrap() {
-        '!' | '*' => chars.next().unwrap().is_ascii_whitespace(),
+        '!' | '*' => chars.next().unwrap() == ' ',
         _ => false,
     }
 }
