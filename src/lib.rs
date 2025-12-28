@@ -101,7 +101,7 @@ fn tokenize(line: &Line) -> Vec<String> {
 // TODO: make more efficient
 fn process(data: &str) -> Line {
     let mut line: Line;
-    if data.trim_start().starts_with(";") {
+    if data.trim_start().starts_with([';', '#']) {
         return Line {
             kind: LineKind::Comment,
             content: None,
@@ -109,7 +109,7 @@ fn process(data: &str) -> Line {
         };
     }
 
-    line = match data.split_once(";") {
+    line = match data.split_once([';', '#']) {
         None => Line {
             kind: LineKind::None,
             content: Some(data.trim_end().to_string()),
