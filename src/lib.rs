@@ -261,9 +261,5 @@ fn is_number_component(char: char) -> bool {
 }
 
 fn has_status(token: &str) -> bool {
-    let mut chars = token.chars();
-    match chars.next().unwrap() {
-        '!' | '*' => chars.next().unwrap() == ' ',
-        _ => false,
-    }
+    token.starts_with("! ") || token.starts_with("* ")
 }
