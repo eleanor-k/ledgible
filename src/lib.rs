@@ -79,8 +79,17 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                 max_acct_len = max_acct_len
                     .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
                 // + 2 spaces between account and amount
-                max_line_len =
-                    max_line_len.max(max_acct_len + format_amount(&tokens[1]).chars().count() + 2);
+                max_line_len = max_line_len.max(
+                    max_acct_len
+                        + if tokens.len() >= 2 {
+                            format_amount(&tokens[1])
+                        } else {
+                            "".to_string()
+                        }
+                        .chars()
+                        .count()
+                        + 2,
+                );
             }
             LineKind::Comment => (),
             _ => max_line_len = max_line_len.max(line.content.as_ref().unwrap().chars().count()),
@@ -99,7 +108,11 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                 line.content = Some(format!(
                     "{:max_acct_len$}  {}",
                     format_account(&tokens[0]),
-                    format_amount(&tokens[1])
+                    if tokens.len() >= 2 {
+                        format_amount(&tokens[1])
+                    } else {
+                        "".to_string()
+                    }
                 ));
             }
             LineKind::None => return Err("Line kind undefined".into()),
