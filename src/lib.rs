@@ -81,10 +81,9 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                 // + 2 spaces between account and amount
                 max_line_len = max_line_len.max(
                     max_acct_len
-                        + if tokens.len() >= 2 {
-                            format_amount(&tokens[1])
-                        } else {
-                            "".to_string()
+                        + match tokens.len() >= 2 {
+                            true => format_amount(&tokens[1]),
+                            false => "".to_string(),
                         }
                         .chars()
                         .count()
@@ -108,10 +107,9 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                 line.content = Some(format!(
                     "{:max_acct_len$}  {}",
                     format_account(&tokens[0]),
-                    if tokens.len() >= 2 {
-                        format_amount(&tokens[1])
-                    } else {
-                        "".to_string()
+                    match tokens.len() >= 2 {
+                        true => format_amount(&tokens[1]),
+                        false => "".to_string(),
                     }
                 ));
             }
