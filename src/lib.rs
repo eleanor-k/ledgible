@@ -1,5 +1,5 @@
 /*
- * ledgible - Formatter for ledger hledger journals
+ * ledgible - Formatter for ledger and hledger journals
  * Copyright (C) 2025  Eleanor Kelley <me at eleanorkelley dot com>
  *
  * This program is free software: you can redistribute it and/or modify
