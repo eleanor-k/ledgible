@@ -23,7 +23,7 @@ use std::fmt::Write;
 
 // TODO: Streamline logic
 pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut ledger: Vec<Line> = Vec::new();
+    let mut ledger: Vec<Line> = Vec::with_capacity(input.lines().count());
 
     let mut comment_block: Option<usize> = None;
     for (i, line) in input
