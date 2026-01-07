@@ -82,7 +82,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                 max_line_len = max_line_len.max(
                     max_acct_len
                         + match tokens.len() >= 2 {
-                            true => format_amount(&tokens[1]),
+                            true => format_amount(&tokens[1])?,
                             false => "".to_string(),
                         }
                         .chars()
@@ -99,7 +99,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
     for mut line in ledger {
         match line.kind {
             LineKind::Comment => {
-                writeln!(buffer, "{}", line.comment.unwrap().content)?;
+                writeln!(buffer, "{}", line.comment.unwrap())?;
                 continue;
             }
             LineKind::Posting => {
@@ -108,7 +108,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                     "{:max_acct_len$}  {}",
                     format_account(&tokens[0]),
                     match tokens.len() >= 2 {
-                        true => format_amount(&tokens[1]),
+                        true => format_amount(&tokens[1])?,
                         false => "".to_string(),
                     }
                 ));
@@ -208,59 +208,59 @@ fn assign_kind(mut line: Line) -> Line {
 
 /// This does not determine if the amount is a valid number.
 /// It only assesses whether it is comprised of chars that compose a number.
-fn format_amount(token: &str) -> String {
-    let currency_prefix = !is_number_component(token.chars().next().unwrap());
-    let mut number = String::new();
-    let mut currency = String::new();
+fn format_amount(token: &str) -> Result<String, String> {
+    let mut output = Amount {
+        amount: 0.0,
+        precision: 0,
+        currency: None,
+    };
 
-    let mut is_number = false;
-    let mut is_currency = false;
-
-    // this loop could probably be refactored
-    for char in token.chars() {
-        if is_number {
-            if is_number_component(char) {
-                number.push(char);
-                continue;
-            } else {
-                is_number = false;
-            }
-        } else if is_currency {
-            if char == ' ' || is_number_component(char) {
-                is_currency = false;
-            } else {
-                currency.push(char);
-                continue;
-            }
-        }
-
-        // if we're not building a currency or number, start building
+    let mut number_index = None;
+    let mut currency_index = None;
+    for (i, char) in token.chars().enumerate() {
         if is_number_component(char) {
-            assert!(number.is_empty());
-            is_number = true;
-            number.push(char);
-        } else if char != ' ' {
-            // is not part of a number; should be currency
-            assert!(currency.is_empty());
-            is_currency = true;
-            currency.push(char);
+            if number_index.is_none() {
+                number_index = Some(i);
+            }
+        } else if currency_index.is_none() && char != ' ' {
+            currency_index = Some(i);
+        }
+        if number_index.is_some() && currency_index.is_some() {
+            break;
         }
     }
 
-    {
-        if currency.is_empty() {
-            number.to_string()
-        } else if currency_prefix {
-            match number.chars().next().unwrap() {
-                '-' => format!("{currency}{number}"),
-                _ => format!("{currency} {number}"),
-            }
-        } else {
-            format!("{number} {currency}")
-        }
+    let number_index = match number_index {
+        Some(i) => i,
+        None => return Err(format!("No amount found in token: {token}")),
+    };
+
+    let amount: String;
+    if let Some(currency_index) = currency_index {
+        let prepend_currency = currency_index < number_index;
+        output.currency = Some(Currency {
+            symbol: if prepend_currency {
+                amount = token[number_index..].to_string();
+                token[currency_index..number_index].trim().to_string()
+            } else {
+                amount = token[number_index..currency_index].to_string();
+                token[currency_index..].trim().to_string()
+            },
+            prepend: prepend_currency,
+        });
+    } else {
+        amount = token.to_string();
     }
-    .trim_end()
-    .to_string()
+
+    let amount = amount.replace(',', "").trim().to_string();
+    output.precision = amount.len() - amount.find('.').unwrap_or(amount.len() - 1) - 1;
+
+    output.amount = match amount.parse::<f64>() {
+        Ok(number) => number,
+        Err(_) => return Err(format!("Cannot parse `f64` in amount: {amount}")),
+    };
+
+    Ok(output.to_string())
 }
 
 fn format_account(account: &str) -> String {
