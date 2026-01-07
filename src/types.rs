@@ -10,7 +10,7 @@ pub struct Comment {
 }
 
 pub struct Amount {
-    pub amount: f64,
+    pub amount: isize,
     pub precision: usize,
     pub currency: Option<Currency>,
 }
@@ -52,10 +52,13 @@ impl std::fmt::Display for Comment {
 impl std::fmt::Display for Amount {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out: String = format!("{:.*}", self.precision, self.amount);
+        if self.precision > 0 {
+            out.insert(out.len() - self.precision, '.');
+        }
         if let Some(currency) = &self.currency {
             match currency.prepend {
                 true => {
-                    if self.amount > 0.0 {
+                    if self.amount >= 0 {
                         out.insert(0, ' ');
                     }
                     out.insert_str(0, &currency.symbol);

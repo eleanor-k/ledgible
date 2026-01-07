@@ -201,7 +201,7 @@ fn assign_kind(mut line: Line) -> Line {
 /// It only assesses whether it is comprised of chars that compose a number.
 fn format_amount(token: &str) -> Result<String, String> {
     let mut output = Amount {
-        amount: 0.0,
+        amount: 0,
         precision: 0,
         currency: None,
     };
@@ -246,9 +246,9 @@ fn format_amount(token: &str) -> Result<String, String> {
     let amount = amount.replace(',', "").trim().to_string();
     output.precision = amount.len() - amount.find('.').unwrap_or(amount.len() - 1) - 1;
 
-    output.amount = match amount.parse::<f64>() {
+    output.amount = match amount.replace('.', "").parse::<isize>() {
         Ok(number) => number,
-        Err(_) => return Err(format!("Cannot parse `f64` in amount: {amount}")),
+        Err(_) => return Err(format!("Cannot parse `isize` in amount: {amount}")),
     };
 
     Ok(output.to_string())
