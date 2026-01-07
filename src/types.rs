@@ -22,7 +22,7 @@ pub struct Currency {
 
 pub enum LineKind {
     Date,
-    Posting,
+    Posting(Vec<String>),
     Comment,
     Other,
     None,

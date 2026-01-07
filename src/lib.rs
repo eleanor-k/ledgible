@@ -73,9 +73,8 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
     let mut max_acct_len = 0;
     let mut max_line_len = 0;
     for line in &ledger {
-        match line.kind {
-            LineKind::Posting => {
-                let tokens = tokenize(line);
+        match &line.kind {
+            LineKind::Posting(tokens) => {
                 max_acct_len = max_acct_len
                     .max(tokens[0].chars().count() + if has_status(&tokens[0]) { 2 } else { 4 });
                 // + 2 spaces between account and amount
@@ -102,8 +101,7 @@ pub fn format(buffer: &mut String, input: &str) -> Result<(), Box<dyn std::error
                 writeln!(buffer, "{}", line.comment.unwrap())?;
                 continue;
             }
-            LineKind::Posting => {
-                let tokens = tokenize(&line);
+            LineKind::Posting(tokens) => {
                 line.content = Some(format!(
                     "{:max_acct_len$}  {}",
                     format_account(&tokens[0]),
@@ -184,24 +182,17 @@ fn assign_kind(mut line: Line) -> Line {
         return line;
     }
 
-    // Determine line type
-    let tokens = tokenize(&line);
-
     // Check for blank line to avoid error when getting first character
-    if tokens.is_empty() {
+    if line.content.as_ref().unwrap().trim().is_empty() {
         line.kind = LineKind::Other;
         return line;
     }
 
-    let first_char = line.content.as_ref().unwrap().chars().next().unwrap();
-    if tokens[0].chars().next().unwrap().is_ascii_digit() {
-        line.kind = LineKind::Date;
-    } else if !tokens.is_empty() && (first_char == ' ' || first_char == '\t') {
-        // only postings will start with whitespace
-        line.kind = LineKind::Posting;
-    } else {
-        line.kind = LineKind::Other;
-    }
+    line.kind = match line.content.as_ref().unwrap().chars().next().unwrap() {
+        '0'..='9' => LineKind::Date,
+        ' ' | '\t' => LineKind::Posting(tokenize(&line)),
+        _ => LineKind::Other,
+    };
 
     line
 }
